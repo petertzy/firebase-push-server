@@ -18,7 +18,7 @@ npm run dev
 ```
 
 ### Run the script:
-#### Push text:
+#### Push Notification:
 ```sh
 ./post.sh
 ```

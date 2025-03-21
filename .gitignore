@@ -1,3 +1,4 @@
 .env
 
 post.sh
+!post.sh.example

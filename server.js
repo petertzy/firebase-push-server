@@ -55,7 +55,8 @@ app.get('/api/notifications', (req, res) => {
 
 // API endpoint: Send a push notification
 app.post('/send-notification', async (req, res) => {
-    const { token, title, body, image } = req.body;
+    // Destructure incoming data from the request body
+    const { token, title, body, image, link, time, author } = req.body;
 
     // Construct the notification message
     const message = {
@@ -63,6 +64,11 @@ app.post('/send-notification', async (req, res) => {
             title: title,
             body: body,
             image: image || '',  // Include image URL if provided
+        },
+        data: {
+            link: link || '',  // Include link if provided
+            time: time || '',  // Include time if provided
+            author: author || '',  // Include author if provided
         },
         token: token // Must be the device's FCM token
     };
@@ -75,7 +81,7 @@ app.post('/send-notification', async (req, res) => {
         // Broadcast the notification to all connected WebSocket clients
         clients.forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({ title, body, image }));
+                client.send(JSON.stringify({ title, body, image, link, time, author }));
             }
         });
 

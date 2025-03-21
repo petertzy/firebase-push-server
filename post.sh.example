@@ -1,0 +1,8 @@
+curl -X POST https://example.com/send-notification \
+-H "Content-Type: application/json" \
+-d '{
+    "token": "Your Device Token",
+    "title": "Hello!",
+    "body": "This is a test notification",
+    "image": "https://images.example.com/photos//example.jpeg"
+}'

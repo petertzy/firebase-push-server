@@ -62,7 +62,7 @@ router.get("/get-device-token", async (req, res) => {
  * 📌 删除指定设备 Token
  * @route DELETE /device-tokens/:token
  */
-router.delete("/device-tokens/:token", async (req, res) => {
+/*router.delete("/device-tokens/:token", async (req, res) => {
   try {
     const { token } = req.params;
 
@@ -83,6 +83,6 @@ router.delete("/device-tokens/:token", async (req, res) => {
     console.error("❌ 删除设备 Token 失败:", error);
     res.status(500).json({ error: "服务器错误" });
   }
-});
+});*/
 
 module.exports = router;

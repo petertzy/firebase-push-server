@@ -1,18 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { Client } = require('pg');
+const { Pool } = require('pg');
 require('dotenv').config();
 
 // 获取连接字符串
 const connectionString = process.env.DATABASE_URL;
 
-// 创建数据库客户端
-const client = new Client({
+// 创建 PostgreSQL 连接池
+const pool = new Pool({
   connectionString: connectionString,
 });
-
-// 连接到数据库
-client.connect();
 
 // 注册设备，存储 token
 router.post('/register-device', async (req, res) => {
@@ -23,16 +20,15 @@ router.post('/register-device', async (req, res) => {
   }
 
   try {
-    // 查询是否已存在该设备
-    const existingDevice = await client.query('SELECT * FROM device_tokens WHERE device_id = $1', [deviceId]);
-
-    if (existingDevice.rows.length > 0) {
-      // 更新现有设备的 token
-      await client.query('UPDATE device_tokens SET token = $1 WHERE device_id = $2', [token, deviceId]);
-    } else {
-      // 插入新的设备记录
-      await client.query('INSERT INTO device_tokens (device_id, token) VALUES ($1, $2)', [deviceId, token]);
-    }
+    // 使用 ON CONFLICT 来处理插入和更新操作
+    const result = await pool.query(
+      `INSERT INTO device_tokens (device_id, token) 
+      VALUES ($1, $2)
+      ON CONFLICT (device_id) 
+      DO UPDATE SET token = $2 
+      RETURNING *`,
+      [deviceId, token]
+    );
 
     console.log('📲 设备注册成功:', { deviceId, token });
     res.status(200).json({ success: true, message: '设备 token 已存储' });

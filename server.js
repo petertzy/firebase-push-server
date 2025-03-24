@@ -3,7 +3,6 @@ const cors = require("cors");
 const http = require("http");
 const dotenv = require("dotenv");
 const setupWebSocket = require("./websocket/websocket");
-const deviceRoutes = require("./routes/device");
 const { router: notificationRoutes } = require("./routes/notifications");
 
 dotenv.config();
@@ -14,7 +13,6 @@ app.use(cors());
 app.use(express.json());
 
 // 挂载 API 路由
-app.use("/api", deviceRoutes);
 app.use("/api", notificationRoutes);
 
 // 创建 HTTP 服务器

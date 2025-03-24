@@ -21,12 +21,12 @@ router.post("/send-notification", async (req, res) => {
   }
 
   try {
-    // 从数据库中获取 ID 为 1 的设备 token
-    const result = await pool.query("SELECT * FROM device_tokens WHERE id = $1", [1]);  // 查询 ID 为 1 的设备
-    const tokens = result.rows.map(row => row.token);  // 提取 token
+    // 从数据库中获取所有设备令牌
+    const result = await pool.query("SELECT * FROM device_tokens");
+    const tokens = result.rows.map(row => row.token);  // 提取所有设备的 token
 
     if (tokens.length === 0) {
-      return res.status(404).json({ success: false, message: "没有找到 ID 为 1 的设备 Token" });
+      return res.status(404).json({ success: false, message: "没有可用的设备 Token" });
     }
 
     // 构建推送通知消息
@@ -35,7 +35,7 @@ router.post("/send-notification", async (req, res) => {
       data: { link: link || "", time: time || "", author: author || "" },
     };
 
-    // 只向 ID 为 1 的设备发送推送通知
+    // 推送通知到所有设备
     const promises = tokens.map(token => {
       return admin.messaging().send({ ...message, token });
     });
@@ -57,6 +57,5 @@ router.post("/send-notification", async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
 
 module.exports = { router, clients };

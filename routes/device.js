@@ -41,17 +41,22 @@ router.post("/device-tokens", async (req, res) => {
 
 /**
  * 📌 获取所有设备 Token
- * @route GET /device-tokens
+ * @route GET /get-device-token
  */
-router.get("/device-tokens", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM device_tokens");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("❌ 获取设备 Token 失败:", error);
-    res.status(500).json({ error: "服务器错误" });
-  }
-});
+router.get("/get-device-token", async (req, res) => {
+    try {
+      const result = await pool.query("SELECT token FROM device_tokens WHERE id = $1", [1]);  // 只查询 ID 为 1 的设备
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: "没有找到设备 token" });
+      }
+  
+      const token = result.rows[0].token;  // 提取设备的 token
+      res.status(200).json({ token });  // 返回 token
+    } catch (error) {
+      console.error("❌ 获取设备 token 失败:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
 /**
  * 📌 删除指定设备 Token

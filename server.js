@@ -13,14 +13,14 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// 挂载 API 路由
+// Mount API routes
 app.use("/api", deviceRoutes);
 app.use("/api", notificationRoutes);
 
-// 创建 HTTP 服务器
+// Create an HTTP server
 const server = http.createServer(app);
-setupWebSocket(server); // 启动 WebSocket 服务器
+setupWebSocket(server); // Start the WebSocket server
 
 server.listen(PORT, () => {
-  console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
+  console.log(`Server is running at http://localhost:${PORT}`);
 });

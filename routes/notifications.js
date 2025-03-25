@@ -2,14 +2,14 @@ const express = require("express");
 const admin = require("../config/firebase");
 const router = express.Router();
 
-let clients = []; // 存储 WebSocket 连接的客户端
+let clients = []; // Store WebSocket-connected clients
 
-// 发送推送通知
+// Send push notification
 router.post("/send-notification", async (req, res) => {
   const { token, title, body, image, link, time, author } = req.body;
 
   if (!token || !title || !body) {
-    return res.status(400).json({ success: false, message: "缺少必要的字段" });
+    return res.status(400).json({ success: false, message: "Missing required fields" });
   }
 
   const message = {
@@ -20,9 +20,9 @@ router.post("/send-notification", async (req, res) => {
 
   try {
     const response = await admin.messaging().send(message);
-    console.log("✅ 推送通知发送成功:", response);
+    console.log("Push notification sent successfully:", response);
 
-    // WebSocket 广播
+    // WebSocket broadcast
     clients.forEach((client) => {
       if (client.readyState === 1) {
         client.send(JSON.stringify({ title, body, image, link, time, author }));
@@ -31,7 +31,7 @@ router.post("/send-notification", async (req, res) => {
 
     res.status(200).json({ success: true, messageId: response });
   } catch (error) {
-    console.error("❌ 发送通知失败:", error);
+    console.error("Failed to send notification:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

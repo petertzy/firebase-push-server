@@ -1,17 +1,17 @@
 const express = require("express");
-const { Pool } = require("pg"); // 导入 PostgreSQL 连接池
+const { Pool } = require("pg"); // Import PostgreSQL connection pool
 const router = express.Router();
 
-// 使用提供的外部连接地址
+// Use the external connection URL from environment variables
 const pool = new Pool({
-  connectionString: "postgresql://serverdb_nlx8_user:A4F9D2CdMA61udAG7PVlWYRPiEBSmBlw@dpg-cvgk9c7noe9s73ce01i0-a.frankfurt-postgres.render.com/serverdb_nlx8",
+  connectionString: process.env.DATABASE_URL, // Load from environment variables
   ssl: {
-    rejectUnauthorized: false, // 必须设置为 false 以适应 Render 上的 SSL 配置
+    rejectUnauthorized: false, // Required for Render's SSL configuration
   },
 });
 
 /**
- * 📌 存储设备 Token
+ * Store Device Token
  * @route POST /device-tokens
  */
 router.post("/device-tokens", async (req, res) => {
@@ -19,70 +19,72 @@ router.post("/device-tokens", async (req, res) => {
     const { token } = req.body;
 
     if (!token) {
-      return res.status(400).json({ error: "Token 不能为空" });
+      return res.status(400).json({ error: "Token cannot be empty" });
     }
 
-    // 检查 Token 是否已存在，防止重复存储
+    // Check if the token already exists to prevent duplicates
     const existingToken = await pool.query("SELECT * FROM device_tokens WHERE token = $1", [token]);
 
     if (existingToken.rows.length > 0) {
-      return res.status(200).json({ message: "Token 已存在，无需存储" });
+      return res.status(200).json({ message: "Token already exists, no need to store again" });
     }
 
-    // 插入 Token 到数据库
+    // Insert token into the database
     await pool.query("INSERT INTO device_tokens (token) VALUES ($1)", [token]);
 
-    res.status(201).json({ message: "Token 存储成功" });
+    res.status(201).json({ message: "Token stored successfully" });
   } catch (error) {
-    console.error("❌ 存储设备 Token 失败:", error);
-    res.status(500).json({ error: "服务器错误" });
+    console.error("Failed to store device token:", error);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 /**
- * 📌 获取所有设备 Token
+ * Retrieve a Device Token
  * @route GET /get-device-token
  */
 router.get("/get-device-token", async (req, res) => {
-    try {
-      const result = await pool.query("SELECT token FROM device_tokens WHERE id = $1", [1]);  // 只查询 ID 为 1 的设备
-      if (result.rows.length === 0) {
-        return res.status(404).json({ success: false, message: "没有找到设备 token" });
-      }
-  
-      const token = result.rows[0].token;  // 提取设备的 token
-      res.status(200).json({ token });  // 返回 token
-    } catch (error) {
-      console.error("❌ 获取设备 token 失败:", error);
-      res.status(500).json({ success: false, error: error.message });
+  try {
+    const result = await pool.query("SELECT token FROM device_tokens WHERE id = $1", [1]); // Query only the device with ID 1
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "No device token found" });
     }
-  });
+
+    const token = result.rows[0].token; // Extract the device token
+    res.status(200).json({ token }); // Return the token
+  } catch (error) {
+    console.error("Failed to retrieve device token:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 /**
- * 📌 删除指定设备 Token
+ * Delete a Specific Device Token
  * @route DELETE /device-tokens/:token
  */
-/*router.delete("/device-tokens/:token", async (req, res) => {
+/*
+router.delete("/device-tokens/:token", async (req, res) => {
   try {
     const { token } = req.params;
 
-    // 确保提供了 token
+    // Ensure a token is provided
     if (!token) {
-      return res.status(400).json({ error: "Token 参数不能为空" });
+      return res.status(400).json({ error: "Token parameter cannot be empty" });
     }
 
-    // 删除 Token
+    // Delete the token
     const result = await pool.query("DELETE FROM device_tokens WHERE token = $1", [token]);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Token 未找到" });
+      return res.status(404).json({ error: "Token not found" });
     }
 
-    res.json({ message: "Token 删除成功" });
+    res.json({ message: "Token deleted successfully" });
   } catch (error) {
-    console.error("❌ 删除设备 Token 失败:", error);
-    res.status(500).json({ error: "服务器错误" });
+    console.error("Failed to delete device token:", error);
+    res.status(500).json({ error: "Server error" });
   }
-});*/
+});
+*/
 
 module.exports = router;

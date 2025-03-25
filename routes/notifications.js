@@ -26,25 +26,31 @@ async function removeInvalidFCMToken(token) {
   }
 }
 
-// Send push notification
+// Send push notification to all devices
 router.post("/send-notification", async (req, res) => {
-  const { token, title, body, image, link, time, author } = req.body;
+  const { tokens, title, body, image, link, time, author } = req.body;
 
-  if (!token || !title || !body) {
-    return res.status(400).json({ success: false, message: "Missing required fields" });
+  // Ensure tokens is not undefined or an empty array
+  if (!Array.isArray(tokens) || tokens.length === 0) {
+    return res.status(400).json({ success: false, message: "Tokens array is required and cannot be empty" });
   }
 
-  const message = {
-    notification: { title, body, image: image || "" },
-    data: { link: link || "", time: time || "", author: author || "" },
-    token: token,
-  };
+  if (!title || !body) {
+    return res.status(400).json({ success: false, message: "Missing required fields: title, body" });
+  }
 
   try {
-    const response = await admin.messaging().send(message);
+    const message = {
+      notification: { title, body, image: image || "" },
+      data: { link: link || "", time: time || "", author: author || "" },
+    };
+
+    // Send push notification
+    const response = await admin.messaging().sendToDevice(tokens, message);
+
     console.log("Push notification sent successfully:", response);
 
-    // WebSocket broadcast
+    // WebSocket broadcast message
     clients.forEach((client) => {
       if (client.readyState === 1) {
         client.send(JSON.stringify({ title, body, image, link, time, author }));
@@ -52,18 +58,18 @@ router.post("/send-notification", async (req, res) => {
     });
 
     // Check and remove invalid FCM tokens
-    if (response.failureCount > 0) {
+    if (response.failureCount > 0 && Array.isArray(response.results)) {
       const failedTokens = response.results
-        .map((result) => result.error ? token : null)
-        .filter(Boolean); // Get failed tokens
+        .map((result, index) => (result.error ? tokens[index] : null))
+        .filter(Boolean); // Filter out invalid tokens
 
-      // For each invalid token, remove it
       for (let failedToken of failedTokens) {
         await removeInvalidFCMToken(failedToken);
       }
     }
 
     res.status(200).json({ success: true, messageId: response });
+
   } catch (error) {
     console.error("Failed to send notification:", error);
     res.status(500).json({ success: false, error: error.message });

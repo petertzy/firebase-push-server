@@ -60,33 +60,4 @@ router.get("/get-device-token", async (req, res) => {
   }
 });
 
-/**
- * Delete a Specific Device Token
- * @route DELETE /device-tokens/:token
- */
-/*
-router.delete("/device-tokens/:token", async (req, res) => {
-  try {
-    const { token } = req.params;
-
-    // Ensure a token is provided
-    if (!token) {
-      return res.status(400).json({ error: "Token parameter cannot be empty" });
-    }
-
-    // Delete the token
-    const result = await pool.query("DELETE FROM device_tokens WHERE token = $1", [token]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Token not found" });
-    }
-
-    res.json({ message: "Token deleted successfully" });
-  } catch (error) {
-    console.error("Failed to delete device token:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-*/
-
 module.exports = router;

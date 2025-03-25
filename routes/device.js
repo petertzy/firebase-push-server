@@ -45,15 +45,17 @@ router.post("/device-tokens", async (req, res) => {
  */
 router.get("/get-device-token", async (req, res) => {
   try {
-    const result = await pool.query("SELECT token FROM device_tokens WHERE id = $1", [1]); // Query only the device with ID 1
+    // Query to fetch all tokens from the device_tokens table
+    const result = await pool.query("SELECT token FROM device_tokens");
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "No device token found" });
+      return res.status(404).json({ success: false, message: "No device tokens found" });
     }
 
-    const token = result.rows[0].token; // Extract the device token
-    res.status(200).json({ token }); // Return the token
+    const tokens = result.rows.map(row => row.token); // Extract all tokens
+    res.status(200).json({ tokens }); // Return the tokens
   } catch (error) {
-    console.error("Failed to retrieve device token:", error);
+    console.error("Failed to retrieve device tokens:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

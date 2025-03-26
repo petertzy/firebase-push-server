@@ -52,9 +52,9 @@ router.post("/send-notification", async (req, res) => {
       },
     };
 
-    // **改用 `sendMulticast` 进行群发**
-    const response = await admin.messaging().sendMulticast({
-      tokens,
+    // **推荐使用 `sendEachForMulticast` (支持群发)**
+    const response = await admin.messaging().sendEachForMulticast({
+      tokens: tokens, // 目标设备令牌
       notification: message.notification,
       data: message.data,
     });

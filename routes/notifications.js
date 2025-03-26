@@ -52,14 +52,14 @@ router.post("/send-notification", async (req, res) => {
       },
     };
 
-    // **推送通知**
-    const response = await admin.messaging().sendEachForMulticast({
-      tokens: tokens, // 目标设备令牌
+    // **改用 `sendMulticast` 进行群发**
+    const response = await admin.messaging().sendMulticast({
+      tokens,
       notification: message.notification,
       data: message.data,
     });
 
-    console.log("🔔 推送通知成功:", response);
+    console.log("🔔 群发推送成功:", JSON.stringify(response, null, 2));
 
     // **WebSocket 广播通知**
     clients.forEach((client) => {

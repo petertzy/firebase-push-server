@@ -46,7 +46,19 @@ router.post("/send-notification", async (req, res) => {
     };
 
     // Send push notification
-    const response = await admin.messaging().sendToDevice(tokens[0], message);
+    const response = await admin.messaging().send({
+      token: tokens[0],
+      notification: {
+        title,
+        body,
+        image: image || "",
+      },
+      data: {
+        link: link || "",
+        time: time || "",
+        author: author || "",
+      },
+    });
 
     console.log("Push notification sent successfully:", response);
 

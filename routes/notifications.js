@@ -1,90 +1,78 @@
 const express = require("express");
 const admin = require("../config/firebase");
-const { Pool } = require("pg"); // PostgreSQL 连接
+const { Pool } = require("pg"); // Import PostgreSQL
 const router = express.Router();
 
-let clients = []; // WebSocket 连接的客户端列表
+let clients = []; // Store WebSocket-connected clients
 
-// PostgreSQL 连接池
+// PostgreSQL connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // 从环境变量加载数据库连接信息
-  ssl: { rejectUnauthorized: false }, // 适用于 Render 等平台
+  connectionString: process.env.DATABASE_URL, // Load database connection string from environment variables
+  ssl: {
+    rejectUnauthorized: false, // Required for Render's SSL configuration
+  },
 });
 
-// **移除无效的 FCM 令牌**
+// Remove invalid FCM token
 async function removeInvalidFCMToken(token) {
   const client = await pool.connect();
   try {
     await client.query("DELETE FROM device_tokens WHERE token = $1", [token]);
-    console.log(`FCM token ${token} 已被删除.`);
+    console.log(`FCM token ${token} deleted successfully.`);
   } catch (error) {
-    console.error(`删除无效 FCM token 失败 (${token}):`, error);
+    console.error(`Failed to delete token ${token}:`, error);
   } finally {
     client.release();
   }
 }
 
-// **发送推送通知**
+// Send push notification to all devices
 router.post("/send-notification", async (req, res) => {
   const { tokens, title, body, image, link, time, author } = req.body;
 
-  // **参数校验**
+  // Ensure tokens is not undefined or an empty array
   if (!Array.isArray(tokens) || tokens.length === 0) {
-    return res.status(400).json({ success: false, message: "Tokens 数组不能为空" });
+    return res.status(400).json({ success: false, message: "Tokens array is required and cannot be empty" });
   }
 
   if (!title || !body) {
-    return res.status(400).json({ success: false, message: "缺少必填字段: title 或 body" });
+    return res.status(400).json({ success: false, message: "Missing required fields: title, body" });
   }
 
   try {
-    // **组装推送消息**
     const message = {
-      notification: {
-        title,
-        body,
-        image: image || "",
-      },
-      data: {
-        link: link || "",
-        time: time || "",
-        author: author || "",
-      },
+      notification: { title, body, image: image || "" },
+      data: { link: link || "", time: time || "", author: author || "" },
     };
 
-    // **推送通知**
-    const response = await admin.messaging().sendEachForMulticast({
-      tokens: tokens, // 目标设备令牌
-      notification: message.notification,
-      data: message.data,
-    });
+    // Send push notification
+    const response = await admin.messaging().sendToDevice(tokens[0], message);
 
-    console.log("🔔 推送通知成功:", response);
+    console.log("Push notification sent successfully:", response);
 
-    // **WebSocket 广播通知**
+    // WebSocket broadcast message
     clients.forEach((client) => {
       if (client.readyState === 1) {
         client.send(JSON.stringify({ title, body, image, link, time, author }));
       }
     });
 
-    // **处理无效的 FCM 令牌**
-    if (response.failureCount > 0) {
-      const failedTokens = response.responses
+    // Check and remove invalid FCM tokens
+    if (response.failureCount > 0 && Array.isArray(response.results)) {
+      const failedTokens = response.results
         .map((result, index) => (result.error ? tokens[index] : null))
-        .filter(Boolean); // 过滤无效的 token
+        .filter(Boolean); // Filter out invalid tokens
 
-      console.log(`❌ 发现 ${failedTokens.length} 个无效 FCM token，正在删除...`);
       for (let failedToken of failedTokens) {
         await removeInvalidFCMToken(failedToken);
       }
     }
 
-    return res.status(200).json({ success: true, results: response });
+    res.status(200).json({ success: true, messageId: response });
 
   } catch (error) {
-    console.error("🚨 发送推送通知失败:", error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error("Failed to send notification:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

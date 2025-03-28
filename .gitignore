@@ -2,3 +2,5 @@
 !.env.example
 post.sh
 !post.sh.example
+
+readme_server.md
